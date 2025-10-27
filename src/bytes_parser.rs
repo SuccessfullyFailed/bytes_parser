@@ -124,6 +124,13 @@ impl BytesParser {
 		)
 	}
 
+	/// Take bytes while their first bit is 0. Returns a u64 containing the found bytes. Increments the cursor.
+	pub fn take_int_variable_length(&mut self) -> u64 {
+		let mut time_bytes:Vec<u8> = self.take_bytes_variable_length();
+		time_bytes = [vec![0; 8 - time_bytes.len()], time_bytes].into_iter().flatten().collect();
+		u64::from_be_bytes(time_bytes.try_into().unwrap())
+	}
+
 
 
 	/* DATA WRITING METHODS */
