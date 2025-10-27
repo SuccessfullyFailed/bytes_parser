@@ -29,6 +29,20 @@ impl BytesParser {
 
 
 
+	/* CURSOR METHODS */
+
+	/// Get the current position of the cursor.
+	pub fn cursor(&self) -> usize {
+		self.cursor
+	}
+
+	/// Skip an amount of bytes.
+	pub fn skip(&mut self, bytes:usize) {
+		self.cursor += bytes;
+	}
+
+
+
 	/* FILE METHODS */
 
 	/// Create a new parser from reading a file.
@@ -49,11 +63,6 @@ impl BytesParser {
 	#[cfg(test)]
 	pub(crate) fn raw_data(&self) -> &[u8] {
 		&self.bytes
-	}
-
-	/// Skip an amount of bytes.
-	pub fn skip(&mut self, bytes:usize) {
-		self.cursor += bytes;
 	}
 
 	/// Take the remaining bytes. Increments the cursor.
