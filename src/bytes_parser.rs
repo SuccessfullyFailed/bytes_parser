@@ -27,18 +27,28 @@ impl BytesParser {
 		}
 	}
 
+
+
+	/* FILE METHODS */
+
 	/// Create a new parser from reading a file.
 	pub fn from_file(path:&str, big_endian:bool) -> Result<BytesParser, Box<dyn Error>> {
 		Ok(BytesParser::new(fs::read(path)?, big_endian))
+	}
+
+	/// Save the current bytes to a file.
+	pub fn to_file(&self, path:&str) -> Result<(), Box<dyn Error>> {
+		Ok(fs::write(path, &self.bytes)?)
 	}
 
 
 
 	/* DATA READING METHODS METHODS */
 
-	/// Returns true if there is no more data to read.
-	pub fn is_empty(&self) -> bool {
-		self.cursor >= self.bytes_size
+	/// Get all raw data.
+	#[cfg(test)]
+	pub(crate) fn raw_data(&self) -> &[u8] {
+		&self.bytes
 	}
 
 	/// Skip an amount of bytes.
@@ -100,5 +110,58 @@ impl BytesParser {
 			Some(bytes) => Ok(Some(T::from_bytes(bytes, self.big_endian))),
 			None => Ok(None)
 		}
+	}
+
+
+
+	/* DATA WRITING METHODS */
+
+	/// Take the given amount of bytes. Increments the cursor.
+	pub fn write_bytes(&mut self, additional_bytes:Vec<u8>) {
+		let additional_bytes_len:usize = additional_bytes.len();
+
+		// If cursor is ahead of last byte, insert zero-bytes to bridge the gap.
+		if self.cursor > self.bytes_size {
+			let gap_size:usize = self.cursor - self.bytes_size;
+			self.bytes.extend(vec![0; gap_size]);
+			self.bytes_size += gap_size;
+		}
+
+		// If the cursor is at the end of the data, add to the end.
+		if self.cursor == self.bytes_size {
+			self.bytes.extend(additional_bytes);
+			self.cursor += additional_bytes_len;
+			self.bytes_size += additional_bytes_len;
+		}
+		
+		// If the cursor is inside of the data, either replace or add new bytes depending on each byte.
+		else if self.cursor < self.bytes_size {
+			for byte_index in 0..additional_bytes_len {
+				if self.cursor < self.bytes_size {
+					self.bytes[self.cursor] = additional_bytes[byte_index];
+				} else {
+					self.bytes.push(additional_bytes[byte_index]);
+					self.bytes_size += 1;
+				}
+				self.cursor += 1;
+			}
+		}
+	}
+
+	/// Take bytes while their first bit is 0. Increments the cursor.
+	pub fn write_bytes_variable_length<T:ByteConversion>(&mut self, value:T) {
+		let mut value_bytes:Vec<u8> = value.to_bytes(self.big_endian);
+		if value_bytes.is_empty() {
+			value_bytes = vec![0];
+		}
+		let bytes_count:usize = value_bytes.len();
+		value_bytes[..bytes_count - 1].iter_mut().for_each(|byte| *byte |= 0b10000000);
+		value_bytes[bytes_count] &= 0b01111111;
+		self.write_bytes(value_bytes);
+	}
+
+	/// Try to take a specific datatype from the bytes. Increments the cursor.
+	pub fn write<T:ByteConversion>(&mut self, value:T) {
+		self.write_bytes(value.to_bytes(self.big_endian));
 	}
 }
