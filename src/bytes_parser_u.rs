@@ -19,9 +19,9 @@ mod test {
 		assert_eq!(parser.take::<u8>().unwrap(), u8::from_be_bytes([60]));
 		assert_eq!(parser.take::<i8>().unwrap(), i8::from_be_bytes([61]));
 		assert_eq!(parser.take::<[u8; 10]>().unwrap(), [62, 63, 64, 65, 66, 67, 68, 69, 70, 71]);
-		assert_eq!(parser.take_conditional(|next_bytes| next_bytes[0] == 80).unwrap(), None::<u16>);
+		assert_eq!(parser.take_conditional(|next_num| next_num >> 8 == 80_u16).unwrap(), None::<u16>);
 		parser.skip(8);
-		assert_eq!(parser.take_conditional(|next_bytes| next_bytes[0] == 80).unwrap(), Some(u16::from_be_bytes([80, 81])));
+		assert_eq!(parser.take_conditional(|next_num| next_num >> 8 == 80_u16).unwrap(), Some(u16::from_be_bytes([80, 81])));
 		parser.skip(13);
 		assert_eq!(parser.take_remaining_bytes(), vec![95, 96, 97, 98, 99]);
 		assert!(parser.take::<u8>().is_err());

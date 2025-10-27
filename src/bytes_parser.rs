@@ -114,11 +114,14 @@ impl BytesParser {
 	}
 
 	/// Take the set amount of bytes if the condition is met. Condition function only gets the amount of bytes requested to take. Returns bytes and increments the cursor only if condition is met.
-	pub fn take_conditional<T:ByteConversion, U:Fn(&[u8]) -> bool>(&mut self, condition:U) -> Result<Option<T>, Box<dyn Error>>  {
-		match self.take_bytes_conditional(T::BYTES_SIZE, condition)? {
-			Some(bytes) => Ok(Some(T::from_bytes(bytes, self.big_endian))),
-			None => Ok(None)
-		}
+	pub fn take_conditional<T:ByteConversion, U:Fn(T) -> bool>(&mut self, condition:U) -> Result<Option<T>, Box<dyn Error>>  {
+		Ok(
+			if self.cursor + T::BYTES_SIZE < self.bytes_size && condition(T::from_bytes(self.bytes[self.cursor..self.cursor + T::BYTES_SIZE].to_vec(), self.big_endian)) {
+				Some(self.take()?)
+			} else {
+				None
+			}
+		)
 	}
 
 
