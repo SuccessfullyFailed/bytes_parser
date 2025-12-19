@@ -20,7 +20,7 @@ mod test {
 		assert_eq!(parser.take::<i8>().unwrap(), i8::from_be_bytes([61]));
 		assert_eq!(parser.take::<[u8; 10]>().unwrap(), [62, 63, 64, 65, 66, 67, 68, 69, 70, 71]);
 		assert_eq!(parser.take_conditional(|next_num| next_num >> 8 == 80_u16).unwrap(), None::<u16>);
-		parser.skip(8);
+		assert_eq!(parser.take_many::<u16>(4).unwrap(), vec![u16::from_be_bytes([72, 73]), u16::from_be_bytes([74, 75]), u16::from_be_bytes([76, 77]), u16::from_be_bytes([78, 79])]);
 		assert_eq!(parser.take_conditional(|next_num| next_num >> 8 == 80_u16).unwrap(), Some(u16::from_be_bytes([80, 81])));
 		parser.skip(13);
 		assert_eq!(parser.take_remaining_bytes(), vec![95, 96, 97, 98, 99]);
@@ -43,7 +43,8 @@ mod test {
 		parser.write(i128::from_le_bytes([46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61]));
 		parser.skip(4);
 		parser.write::<[u8; 4]>([66, 67, 68, 69]);
+		parser.write_many::<u16>(vec![u16::from_le_bytes([70, 71]), u16::from_le_bytes([72, 73])]);
 
-		assert_eq!(parser.raw_data(), (0..70).map(|index| if index > 61 && index < 66 { 0 } else { index }).collect::<Vec<u8>>());
+		assert_eq!(parser.raw_data(), (0..74).map(|index| if index > 61 && index < 66 { 0 } else { index }).collect::<Vec<u8>>());
 	}
 }

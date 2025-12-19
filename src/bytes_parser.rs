@@ -113,6 +113,15 @@ impl BytesParser {
 		Ok(T::from_bytes(self.take_bytes(T::BYTES_SIZE)?, self.big_endian))
 	}
 
+	/// Try to take the requested amount of the given type. Increments the cursor.
+	pub fn take_many<T:ByteConversion>(&mut self, amount:usize) -> Result<Vec<T>, Box<dyn Error>> {
+		let mut results:Vec<T> = Vec::with_capacity(amount);
+		for _ in 0..amount {
+			results.push(self.take()?);
+		}
+		Ok(results)
+	}
+
 	/// Take the set amount of bytes if the condition is met. Condition function only gets the amount of bytes requested to take. Returns bytes and increments the cursor only if condition is met.
 	pub fn take_conditional<T:ByteConversion, U:Fn(T) -> bool>(&mut self, condition:U) -> Result<Option<T>, Box<dyn Error>>  {
 		Ok(
@@ -182,5 +191,10 @@ impl BytesParser {
 	/// Try to take a specific datatype from the bytes. Increments the cursor.
 	pub fn write<T:ByteConversion>(&mut self, value:T) {
 		self.write_bytes(value.to_bytes(self.big_endian));
+	}
+
+	/// Try to take the requested amount of the given type. Increments the cursor.
+	pub fn write_many<T:ByteConversion>(&mut self, values:Vec<T>) {
+		self.write_bytes(values.into_iter().map(|value| value.to_bytes(self.big_endian)).flatten().collect());
 	}
 }
